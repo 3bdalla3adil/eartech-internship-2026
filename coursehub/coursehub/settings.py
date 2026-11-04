@@ -128,8 +128,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-<<<<<<< HEAD
+
+# settings.py
 AUTH_USER_MODEL = "accounts.User"
-=======
-AUTH_USER_MODEL = "accounts.User"
->>>>>>> f08b59dbc75e08e8d594e580c61328c1c1e6b932
