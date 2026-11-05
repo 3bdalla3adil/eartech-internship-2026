@@ -144,13 +144,40 @@ Legend: `1:N` = one parent to many children; `N:1` = many children to one parent
 
 | App | Responsibility | Owner | Status |
 |---|---|---|---|
-| _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| `accounts` | Custom `User` model (`AbstractUser` + `role`: STUDENT / INSTRUCTOR), sign up, login/logout, profile, role-check decorators and mixins | _name_ | Exists — `User` model done on `team-a/sprint-1` |
+| `courses` | `Course`, `Module`, `Lesson`; public catalog, course detail, instructor create/edit/publish | _name_ | App exists — models in Sprint 1 |
+| `enrollments` | `Enrollment`, `LessonProgress`; enroll, "My courses", mark lesson complete, progress % | _name_ | App exists — models in Sprint 2 |
+| `reviews` | `Review`; rate and review a course (enrolled students only), average rating | _name_ | App exists — models in Sprint 3 |
+| `core` *(proposed)* | Home and about pages, `base.html`, navbar, shared CSS/JS | _name_ | To be created in Sprint 1 |
+
+The scrum master reviews every PR and has the final say on its design. Every app also has a backup reviewer so work isn't blocked when the owner is away:
+
+| App | Backup reviewer |
+|---|---|
+| `accounts` | _name_ |
+| `courses` | _name_ |
+| `enrollments` | _name_ |
+| `reviews` | _name_ |
+| `core` | _name_ |
 
 ### App boundaries and dependencies
 
-- Dependency direction: _TBD_
-- What each app must not own: _TBD_
-- Shared code / utilities: _TBD_
+- **Dependency direction:** `accounts` ← `courses` ← `enrollments` ← `reviews`. An app may import from apps to its left, never to its right. This prevents circular imports and matches the build order across sprints: each app can be built and tested once the apps it depends on exist. `core` sits at the edge and may read from any app (e.g. the home page lists published courses), but no app imports from `core`.
+- **Why this split:**
+  - `Module` and `Lesson` live in `courses` because they only exist inside a course and are managed by the same instructor in the same screens.
+  - `LessonProgress` lives in `enrollments`, not `courses`, because it describes a student's progress through a course, not the course content itself.
+  - `reviews` is its own app because it is a self-contained feature arriving later, depends on enrollment (only enrolled students can review), and can be postponed without affecting other apps.
+- **What each app must not own:**
+  - `accounts` must not know about courses, enrollments or reviews. No course-related fields on `User`.
+  - `courses` must not track who is enrolled or their progress; it only describes content.
+  - `enrollments` must not edit course content; it only reads courses and lessons.
+  - `reviews` must not create enrollments; it only checks that one exists.
+  - No app other than `accounts` defines user or role models. There are no separate `Student` or `Instructor` tables.
+- **Shared code / utilities:**
+  - Role checks (`student_required`, `instructor_required`, and class-based mixins) live in `accounts` and are imported by every app. No app writes its own `request.user.role == ...` checks.
+  - Always reference the user model with `settings.AUTH_USER_MODEL` in model fields and `get_user_model()` in code, never by importing `User` directly.
+  - `base.html`, the navbar and shared static files are owned by the `core` owner. Other apps extend `base.html` and don't edit it without telling the owner.
+  - Project-wide files (`settings.py`, root `urls.py`, `requirements.txt`) have a single owner: _name_.
 
 ---
 
