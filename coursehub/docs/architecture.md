@@ -221,8 +221,6 @@ Access levels: **Public**, **Authenticated** (any signed-in role), **Student-onl
 
 ## 4. Conventions
 
-## 4. Conventions
-
 ### Naming
 
 - **Apps:** lowercase, plural nouns for apps that hold a collection of things (`accounts`, `courses`, `enrollments`, `reviews`), `core` for shared pages. No hyphens or underscores.
