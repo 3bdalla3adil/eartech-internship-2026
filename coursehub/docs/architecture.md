@@ -221,29 +221,38 @@ Access levels: **Public**, **Authenticated** (any signed-in role), **Student-onl
 
 ## 4. Conventions
 
+## 4. Conventions
+
 ### Naming
 
-- Apps: _TBD_
-- Models: _TBD_
-- Views and URLs: _TBD_
-- Templates: _TBD_
-- Tests: _TBD_
-- Branches and commits (see `CONTRIBUTING.md`): _TBD_
+- **Apps:** lowercase, plural nouns for apps that hold a collection of things (`accounts`, `courses`, `enrollments`, `reviews`), `core` for shared pages. No hyphens or underscores.
+- **Models:** singular `PascalCase` (`Course`, `LessonProgress`, not `Courses`). Foreign keys are named after the related object, not its id (`instructor`, not `instructor_id`). Every FK and M2M sets `related_name` in plural (`course.modules`, `user.enrollments`). Every model defines `__str__`.
+- **Views and URLs:**
+  - View functions in `snake_case`, class-based views in `PascalCase` ending in `View` (`course_detail`, `CourseCreateView`).
+  - Each app has its own `urls.py` with `app_name` set, included from the root `urls.py` with a prefix (`courses/`, `accounts/`, ...).
+  - URL names follow `<model>_<action>` (agreed by the team), using only these actions: `list`, `detail`, `create`, `update`, `delete` (e.g. `course_list`, `course_detail`, `course_create`, `course_update`, `course_delete`). Use `update`, not `edit`; `delete`, not `remove`. Actions outside these five use a clear verb in the same pattern (`course_enroll`, `lesson_complete`).
+  - URL names are always referenced with their app namespace (`{% url 'courses:course_detail' course.pk %}`, `reverse("courses:course_list")`). No hard-coded paths in templates or views.
+  - URL paths are lowercase with hyphens (`my-courses/`, not `my_courses/`).
+- **Templates:** lowercase `snake_case`, named after the page (`course_list.html`, `course_detail.html`, `course_form.html`). Partials start with an underscore (`_navbar.html`, `_course_card.html`).
+- **Tests:** in `<app>/tests/` once an app has more than one test file (`test_models.py`, `test_views.py`), otherwise `<app>/tests.py`. Test classes end in `Tests` (`CourseModelTests`); test methods describe the behaviour (`test_draft_courses_hidden_from_catalog`). Run `python manage.py test` before every PR.
+- **Branches and commits:** see `CONTRIBUTING.md`. Branches: `feature/<name>-<task-number>-<short-description>` (e.g. `feature/walid-3301-course-detail`), branched from and merged back into `team-a/sprint-<n>`. Commits: short imperative summary that says what changed (`Add Course model and admin`, not `fixes` or `update`). PR titles include the task number.
 
 ### Templates
 
-- Project-level template directory: _TBD_
-- App-level template directory: _TBD_
-- Naming pattern (`<app>/<page>.html`): _TBD_
-- Shared partials: _TBD_
+- **Project-level template directory:** `templates/` at the project root, registered in `TEMPLATES["DIRS"]` as `BASE_DIR / "templates"`. Holds only shared layout: `base.html` and `partials/`.
+- **App-level template directory:** each app keeps its own pages in `<app>/templates/<app>/` (e.g. `courses/templates/courses/course_list.html`). The repeated app name is deliberate: it namespaces templates so two apps can both have a `detail.html` without clashing. Requires `APP_DIRS: True` (Django's default).
+- **Naming pattern:** `<app>/<page>.html`, rendered as `render(request, "courses/course_list.html", ...)`. Every page template starts with `{% extends "base.html" %}` and fills `{% block title %}` and `{% block content %}`.
+- **Shared partials:** site-wide pieces (navbar, footer, messages) in `templates/partials/`, included with `{% include "partials/_navbar.html" %}`. Partials used by only one app stay in that app's template folder (`courses/_course_card.html`). Changes to `base.html` or `templates/partials/` need the `core` owner's review.
 
 ### Static files
 
-- CSS / JS / images location: _TBD_
-- Static URL and collection: _TBD_
-- Third-party assets (CDN vs vendored): _TBD_
-
----
+- **CSS / JS / images location:**
+  - Site-wide assets in `static/` at the project root (`static/css/main.css`, `static/js/main.js`, `static/img/`), registered with `STATICFILES_DIRS = [BASE_DIR / "static"]`.
+  - App-specific assets in `<app>/static/<app>/` (e.g. `courses/static/courses/css/catalog.css`), namespaced like templates.
+  - Always loaded with `{% load static %}` and `{% static "css/main.css" %}`, never hard-coded `/static/...` paths.
+  - User uploads (course thumbnails) are **media**, not static: stored in `media/` (`MEDIA_ROOT`), served at `/media/` in development only, and listed in `.gitignore`.
+- **Static URL and collection:** `STATIC_URL = "static/"`. For deployment, `STATIC_ROOT = BASE_DIR / "staticfiles"` and `python manage.py collectstatic`; `staticfiles/` is in `.gitignore`. In development, `runserver` serves static files automatically when `DEBUG = True`.
+- **Third-party assets (CDN vs vendored):** we use **Bootstrap 5** (agreed by the team) from the jsDelivr CDN, with the exact version pinned, linked once in `base.html`: CSS in `<head>`, the JS bundle just before `</body>`. The tags are copied from the official Bootstrap quick-start page, including `integrity` attributes. No other template links Bootstrap. Our own styles go in `static/css/main.css`, loaded *after* Bootstrap so they can override it; Bootstrap's own files are never edited or copied. Reasons for the CDN: nothing extra to commit, and the whole team uses the same version. If we later need offline work or deployment without internet access, we switch to vendored copies in `static/vendor/`. Adding any other library needs a short note in the PR explaining why.
 
 ## 5. Sprint 1 in detail
 
