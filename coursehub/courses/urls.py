@@ -6,4 +6,5 @@ app_name = 'courses'
 
 urlpatterns = [
     path('', views.course_list, name='list'),
+    path('studio/', views.creator_studio, name='studio'),
 ]

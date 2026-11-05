@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Creator Studio | CourseHub{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h1 class="mb-1">Creator Studio</h1>
+        <p class="text-muted mb-0">Instructor-only area.</p>
+    </div>
+    <span class="badge text-bg-success fs-6">Instructor</span>
+</div>
+
+<div class="alert alert-info">
+    Course creation arrives in sprint 2. For now, this page proves that the
+    instructor guard protects a real URL: students get a 403, guests are sent to login.
+</div>
+
+<a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Back to dashboard</a>
+{% endblock %}

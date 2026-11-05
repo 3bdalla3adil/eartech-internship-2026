@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | CourseHub{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h1 class="mb-1">Welcome back, {{ user.get_full_name|default:user.username }}</h1>
+        <p class="text-muted mb-0">
+            You are signed in as a <strong>{{ user.get_role_display }}</strong>.
+        </p>
+    </div>
+    <span class="badge text-bg-primary fs-6">{{ user.get_role_display }}</span>
+</div>
+
+<div class="row g-3">
+    {% if user.role == 'INSTRUCTOR' %}
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5">Creator Studio</h2>
+                    <p class="text-muted">
+                        Create courses, organise them into modules, and publish lessons.
+                    </p>
+                    <a href="{% url 'courses:studio' %}" class="btn btn-primary">
+                        Open Creator Studio
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% elif user.role == 'STUDENT' %}
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5">My Learning</h2>
+                    <p class="text-muted">
+                        Pick up where you left off and track the lessons you have finished.
+                    </p>
+                    <a href="{% url 'enrollments:my_learning' %}" class="btn btn-primary">
+                        Go to My Learning
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Browse courses</h2>
+                <p class="text-muted">
+                    Explore the CourseHub catalogue and find your next course.
+                </p>
+                <a href="{% url 'courses:list' %}" class="btn btn-outline-primary">
+                    View catalogue
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

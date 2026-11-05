@@ -17,11 +17,47 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'home' %}">Home</a>
                     </li>
-                    <!-- Add more navigation links here -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'courses:list' %}">Courses</a>
+                    </li>
+
+                    {% if user.is_authenticated %}
+                        {% if user.role == 'INSTRUCTOR' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'courses:studio' %}">Creator Studio</a>
+                            </li>
+                        {% elif user.role == 'STUDENT' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'enrollments:my_learning' %}">My Learning</a>
+                            </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <span class="navbar-text me-2">
+                                Hi, {{ user.get_full_name|default:user.username }}
+                                <span class="badge text-bg-secondary">{{ user.get_role_display }}</span>
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link nav-link">Log out</button>
+                            </form>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'register' %}">Register</a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
