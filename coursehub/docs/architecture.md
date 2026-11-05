@@ -156,18 +156,39 @@ Legend: `1:N` = one parent to many children; `N:1` = many children to one parent
 
 ## 3. URL and permission table
 
-Access levels: **Public**, **Student-only**, **Instructor-only**.
+Access levels: **Public**, **Authenticated** (any signed-in role), **Student-only**, **Instructor-only**, **Staff-only**. The brief names Public / Student-only / Instructor-only; Authenticated and Staff-only are added because `/dashboard/` is shared by both roles and `/admin/` is restricted by `is_staff`, not by course role.
 
 | URL | Page / purpose | View | Access level | Login required | Notes |
 |---|---|---|---|---|---|
-| _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| `/` | Home / landing page | `TemplateView` (`home.html`) | Public | No | Built. Links to courses, login and register. |
+| `/courses/` | Course catalogue | `courses.views.course_list` | Public | No | Built as a placeholder; lists published courses only once `Course` exists. |
+| `/courses/<slug>/` | Course detail, curriculum and reviews | `courses.views.course_detail` | Public | No | Planned. Unpublished courses return 404 except to the owning instructor and staff. |
+| `/accounts/register/` | Student registration | `accounts.views.register` | Public | No | Built. Always creates a `STUDENT`; signed-in users are redirected to `/dashboard/`. |
+| `/login/` | Login | `LoginView` with `accounts.forms.LoginForm` | Public | No | Built. |
+| `/logout/` | Logout | `LogoutView` | Authenticated | Yes | Built. POST only; GET returns 405. Redirects to `/`. |
+| `/dashboard/` | Role-aware dashboard | `accounts.views.dashboard` | Authenticated | Yes | Built. Students see their learning shortcuts; instructors see Creator Studio shortcuts. |
+| `/my-learning/` | Student's enrolled courses | `enrollments.views.my_learning` | Student-only | Yes | Built with `login_required`; tighten to `student_required`. |
+| `/my-learning/<slug>/` | Course player overview | `enrollments.views.course_player` | Student-only | Yes | Planned. Requires an `Enrollment` for the student; otherwise 404. |
+| `/my-learning/<slug>/lessons/<int:lesson_id>/` | Lesson player | `enrollments.views.lesson_detail` | Student-only | Yes | Planned. The lesson must belong to the enrolled course; otherwise 404. |
+| `/my-learning/<slug>/lessons/<int:lesson_id>/complete/` | Mark lesson complete | `enrollments.views.lesson_complete` | Student-only | Yes | Planned. POST only. Completes the matching `LessonProgress`. |
+| `/courses/<slug>/enroll/` | Enrol in a course | `enrollments.views.enroll` | Student-only | Yes | Planned. POST only; idempotent per `(student, course)`. |
+| `/courses/<slug>/reviews/` | Create a review | `reviews.views.review_create` | Student-only | Yes | Planned. POST only; requires enrolment; one review per student per course. |
+| `/courses/<slug>/reviews/<int:review_id>/edit/` | Edit own review | `reviews.views.review_update` | Student-only | Yes | Planned. Author only; other students and instructors get 404. |
+| `/courses/studio/` | Creator Studio landing page | `courses.views.creator_studio` | Instructor-only | Yes | Built. Guarded by `instructor_required`. |
+| `/courses/studio/courses/new/` | Create a course | `courses.views.course_create` | Instructor-only | Yes | Planned. Sets `instructor` to `request.user`. |
+| `/courses/studio/courses/<slug>/edit/` | Edit course details | `courses.views.course_update` | Instructor-only | Yes | Planned. Owner only; other instructors get 404. |
+| `/courses/studio/courses/<slug>/modules/` | Manage modules and lessons | `courses.views.course_curriculum` | Instructor-only | Yes | Planned. Owner only; covers module/lesson create, reorder and delete. |
+| `/courses/studio/courses/<slug>/publish/` | Publish or unpublish | `courses.views.course_publish` | Instructor-only | Yes | Planned. POST only; owner only; toggles `is_published`. |
+| `/admin/` | Django admin | `admin.site.urls` | Staff-only | Yes | Built. Requires `is_staff`; used to promote a user by setting `role=INSTRUCTOR`. |
 
 ### Permission rules
 
-- Guest behaviour (302 to login vs 403): _TBD_
-- Student behaviour on instructor-only pages: _TBD_
-- Instructor behaviour on student-only pages: _TBD_
-- Where enforcement lives (decorator, mixin, view, template): _TBD_
+- **Guest behaviour:** every route with **Login required = Yes** runs `login_required` / `LoginRequiredMixin` as the outermost check. A guest gets **302 to `/login/?next=<original URL>`**, never 403 — even on student-only or instructor-only pages. Django validates `next`, so it cannot be used as an open redirect. Public routes never redirect.
+- **Wrong authenticated role:** a signed-in user with the wrong role gets **403 Forbidden** (`PermissionDenied`). Students on instructor-only pages and instructors on student-only pages are both rejected; the role is never silently downgraded. Instructors may still read public course detail pages, but cannot enrol or review.
+- **Object-level rules:** role checks alone are not enough. Student routes scope querysets through `Enrollment.objects.filter(student=request.user)`, and objects outside that scope return **404**, not 403, so IDs cannot be probed. Instructor studio routes scope through `Course.objects.filter(instructor=request.user)`. Review edits scope to the author. Staff override ownership only inside `/admin/`.
+- **Method rules:** logout, enrol, lesson completion, publish/unpublish and review create/edit are **POST only** with CSRF protection; a GET returns 405. Read pages are GET.
+- **Where enforcement lives:** role checks use `accounts.decorators.instructor_required` and a matching `student_required` for function views, plus `InstructorRequiredMixin` / `StudentRequiredMixin` for class-based views. Ownership is enforced by scoped `get_queryset()` or an explicit check in the view or service layer. Templates only hide links (`{% if user.is_instructor %}`) and are **never** the security boundary — the view still enforces the rule. Admin access relies on `is_staff`, not on `role`.
+- **Post-success redirects:** login and registration → `/dashboard/`; logout → `/`; enrolment → `/my-learning/<slug>/`; review create/edit → the course detail page.
 
 ---
 
