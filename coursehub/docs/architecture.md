@@ -5,13 +5,14 @@
 > **Task:** `AB#TBD`
 > **Branch:** `feature/team-a-design-task` → `team-a/sprint-1`
 > **Owner:** Team A
-> **Last updated:** 5 November 2026
+> **Last updated:** 6 November 2026
 
 ## Context and fixed decisions (given)
 
 - One custom user model: `accounts.User`, based on `AbstractUser`, with a `role` field (`STUDENT` or `INSTRUCTOR`). It is already on `team-a/sprint-1`. No separate Student or Instructor user tables.
 - Public registration lets the user choose **Student** or **Instructor**, as merged in PR #20 (task 3284).
 - The merged `Course` model (PR #29, task 3291) has `title`, `instructor` (`CASCADE`), `price`, `thumbnail`, `is_published` and `created_at`. It has **no** `slug`, `description` or `updated_at`; those are not part of the current design.
+- The merged `Module` and `Lesson` models (PR #32, task 3303) use `order` for sorting. `Module` has `course` + `title` + `order`; `Lesson` has `module` + `title` + `notes` + `video_url` + `order`.
 - URLs use integer primary keys. `LessonProgress` links to `student` and `lesson` (tasks 3313 and 3322), not to `Enrollment`.
 - Home and About belong to the `courses` app (tasks 3292 and 3293). A separate `core` app is **not** created now; see Open questions.
 
@@ -57,17 +58,16 @@ erDiagram
         bigint id PK
         bigint course_id FK
         varchar title
-        text description
-        int position
+        int order
     }
 
     LESSON {
         bigint id PK
         bigint module_id FK
         varchar title
-        text content
+        text notes
         varchar video_url
-        int position
+        int order
     }
 
     ENROLLMENT {
@@ -123,8 +123,8 @@ Legend: `1:N` = one parent to many children. `LessonProgress` has two parents: t
 |---|---|---|---|---|
 | `User` | `id` (`BigAutoField`) | — | 1 instructor → N `Course`; 1 student → N `Enrollment`; 1 student → N `Review` | `AbstractUser` + `role` (`STUDENT`/`INSTRUCTOR`). No separate Student/Instructor tables. Inherits `username` (unique), `email`, `password`, `is_active`, etc. |
 | `Course` | `id` | `instructor_id` → `User` (`CASCADE`) | N `Course` → 1 instructor; 1 `Course` → N `Module`, N `Enrollment`, N `Review` | Matches merged PR #29. Fields: `title`, `price` (default `0`), `thumbnail`, `is_published` (default `False`), `created_at`. No `slug`, `description` or `updated_at`. |
-| `Module` | `id` | `course_id` → `Course` (`CASCADE`) | 1 `Module` → N `Lesson` | `position` orders modules inside a course. |
-| `Lesson` | `id` | `module_id` → `Module` (`CASCADE`) | 1 `Lesson` → N `LessonProgress` | `position` orders lessons inside a module. `content` and `video_url` hold the pre-recorded material. |
+| `Module` | `id` | `course_id` → `Course` (`CASCADE`) | 1 `Module` → N `Lesson` | Matches merged PR #32. Fields: `title`, `order` (default `0`); ordered by `order`. |
+| `Lesson` | `id` | `module_id` → `Module` (`CASCADE`) | 1 `Lesson` → N `LessonProgress` | Matches merged PR #32. Fields: `title`, `notes`, `video_url` (optional), `order` (default `0`); ordered by `order`. |
 | `Enrollment` | `id` | `student_id` → `User` (`CASCADE`); `course_id` → `Course` (`CASCADE`) | N `Enrollment` → 1 student + 1 course | Join model for Student ↔ Course. Unique `(student, course)`. `completed_at` is set when every lesson is complete. |
 | `LessonProgress` | `id` | `student_id` → `User` (`CASCADE`); `lesson_id` → `Lesson` (`CASCADE`) | N `LessonProgress` → 1 student + 1 lesson | Join model for Student ↔ Lesson, per tasks 3313 and 3322. Unique `(student, lesson)`. `is_completed` + `completed_at`. |
 | `Review` | `id` | `student_id` → `User` (`CASCADE`); `course_id` → `Course` (`CASCADE`) | N `Review` → 1 student + 1 course | Unique `(student, course)`. `rating` constrained to 1–5; `comment` optional. |
@@ -147,7 +147,7 @@ Legend: `1:N` = one parent to many children. `LessonProgress` has two parents: t
 | App | Responsibility | Owner | Status |
 |---|---|---|---|
 | `accounts` | Custom `User` model (`AbstractUser` + `role`: STUDENT / INSTRUCTOR), registration, login/logout, role-check decorators and mixins | _pending group session_ | Exists — `User` model and registration merged on `team-a/sprint-1` |
-| `courses` | `Course`, `Module`, `Lesson`; Home and About pages, public catalogue, course detail, instructor create/edit/publish | _pending group session_ | App exists — `Course` model merged (PR #29); Module/Lesson in Sprint 2 |
+| `courses` | `Course`, `Module`, `Lesson`; Home and About pages, public catalogue, course detail, instructor create/edit/publish | _pending group session_ | App exists — `Course`, `Module` and `Lesson` merged (PRs #29/#32), Home merged (PR #31); course detail and studio in Sprint 2 |
 | `enrollments` | `Enrollment`, `LessonProgress`; enrol, "My Learning", mark lesson complete, progress % | _pending group session_ | App exists — models in Sprint 3 per tasks 3313/3322 |
 | `reviews` | `Review`; rate and review a course (enrolled students only), average rating | _pending group session_ | App exists — models in Sprint 4 |
 
@@ -188,11 +188,11 @@ The scrum master reviews every PR and has the final say on its design. Every app
 
 Access levels: **Public**, **Authenticated** (any signed-in role), **Student-only**, **Instructor-only**, **Staff-only**. The brief names Public / Student-only / Instructor-only; Authenticated and Staff-only are added because `/dashboard/` is shared by both roles and `/admin/` is restricted by `is_staff`, not by course role.
 
-**Built** means merged into `team-a/sprint-1` (currently at `e834690`). Anything from closed PR #22 — `/dashboard/`, `/my-learning/`, `/courses/studio/` and the styled login — is **Planned**, not built.
+**Built** means merged into `team-a/sprint-1` (currently at `f1d1f3b`). Anything from closed PR #22 — `/dashboard/`, `/my-learning/`, `/courses/studio/` and the styled login — is **Planned**, not built.
 
 | URL | Page / purpose | View | Access level | Login required | Notes |
 |---|---|---|---|---|---|
-| `/` | Home / landing page | `TemplateView` → `courses.views.home` (task 3292) | Public | No | Built as a root `TemplateView`; task 3292 moves it into `courses`. |
+| `/` | Home / landing page | `courses.views.home` | Public | No | Built (PR #31). Shows up to eight published courses, newest first. |
 | `/about/` | About the platform | `courses.views.about` | Public | No | Planned (task 3293, PR #23). |
 | `/courses/` | Course catalogue | `courses.views.course_list` | Public | No | Built as a placeholder; lists published courses once the catalogue exists. URL name is `courses:list`. |
 | `/courses/<int:pk>/` | Course detail, curriculum and reviews | `courses.views.course_detail` | Public | No | Planned (Sprint 2). Unpublished courses return 404 except to the owning instructor and staff. |
@@ -266,8 +266,8 @@ Ship a runnable Django foundation for CourseHub: the custom role-based user mode
 
 ### Scope
 
-- **In scope:** Django project setup, `accounts.User` with `STUDENT`/`INSTRUCTOR`, public registration with role choice, login/logout, role-check decorators and mixins, role-aware navigation, course catalogue route, initial `Course` model and admin, Home page content, About page, and this architecture document.
-- **Out of scope:** modules, lessons, enrolment, lesson progress, reviews, search, payments, media uploads beyond the `Course.thumbnail` field, a separate `core` app, and any dashboard beyond the basic post-login landing page.
+- **In scope:** Django project setup, `accounts.User` with `STUDENT`/`INSTRUCTOR`, public registration with role choice, login/logout, role-check decorators and mixins, role-aware navigation, course catalogue route, initial `Course` model and admin, `Module` and `Lesson` models, Home page content, About page, and this architecture document.
+- **Out of scope:** Module/Lesson management screens, enrolment, lesson progress, reviews, search, payments, media uploads beyond the `Course.thumbnail` field, a separate `core` app, and any dashboard beyond the basic post-login landing page.
 
 ### Deliverables
 
@@ -275,8 +275,8 @@ Ship a runnable Django foundation for CourseHub: the custom role-based user mode
 - `accounts.User` (`AbstractUser` + `role`) with an admin listing, plus registration that accepts both roles.
 - Login and logout routes with templates that extend `base.html`.
 - `instructor_required` and `InstructorRequiredMixin`, with tests for instructor, student and anonymous access.
-- `courses:list` catalogue route and the merged `Course` model with admin registration.
-- Home and About pages owned by `courses` (tasks 3292/3293).
+- `courses:list` catalogue route and the merged `Course`, `Module` and `Lesson` models with admin registration.
+- Home page (merged, task 3292) and About page (task 3293, PR #23).
 - `coursehub/docs/architecture.md` agreed by the team.
 
 ### Definition of Done
@@ -302,14 +302,15 @@ Owners and backups are assigned in the group design session, not by one author. 
 | Custom `User` model with `role` | 3283 | _pending group session_ | 3280 | Merged PR #13; `AUTH_USER_MODEL` set, migration applied, admin works. |
 | Public registration with role choice | 3284 | _pending group session_ | 3283 | Merged PR #20; Student and Instructor accounts can be created and log in. |
 | Instructor role checks and tests | 3287 | _pending group session_ | 3283 | Merged PRs #14/#19; decorator and mixin return 403 for students and 302 for guests. |
-| Role-aware navbar | 3288 | _pending group session_ | 3282, 3283 | PR #30 open; links differ by role, logout uses POST. |
+| Role-aware navbar | 3288 | _pending group session_ | 3282, 3283 | Merged PR #30; links differ by role, logout uses POST. |
 | Course catalogue route, view and test | 3279 | _pending group session_ | 3280 | Merged PR #18; `courses:list` returns 200 and is tested. |
 | Initial `Course` model and admin | 3291 | _pending group session_ | 3283 | Merged PR #29; fields match the ERD, migration applied, admin searchable. |
-| Home page in `courses` | 3292 | _pending group session_ | 3280, 3279 | Home view lives in `courses`, template extends `base.html`, route test passes. |
+| `Module` and `Lesson` models | 3303 | _pending group session_ | 3291 | Merged PR #32; models, ordering and migrations match the ERD. |
+| Home page in `courses` | 3292 | _pending group session_ | 3280, 3279, 3291 | Merged PR #31; home view lives in `courses` and shows published courses. |
 | About page in `courses` | 3293 | _pending group session_ | 3280 | PR #23 open; `/about/` renders and is reachable from the navbar. |
 | This architecture document | _pending Azure lookup_ | _pending group session_ | 3283, 3291 | Sections 1–6 reviewed and agreed by Team A; PR merged. |
 
-**Sprint 1 exit rule:** the sprint is done only when tasks 3288, 3292 and 3293 are merged as well. At the time of writing, PR #30 (navbar) and PR #23 (About) are still open.
+**Sprint 1 exit rule:** only task 3293 (About page) remains; PR #23 is still open. PRs #33 (module work) and #34 (thumbnail upload) belong to the Sprint 2 backlog, not to Sprint 1.
 
 ---
 
@@ -319,7 +320,7 @@ Owners and backups are assigned in the group design session, not by one author. 
 
 - **Theme:** instructors can create and organise course content.
 - **Main features:** instructor course create/update/delete, thumbnail upload, Module and Lesson CRUD, lesson ordering, draft/publish toggle, Creator Studio screens, ownership checks on every studio route.
-- **Models touched:** `Course` (finish fields and validation), `Module`, `Lesson`.
+- **Models touched:** `Course` (validation and upload UI), `Module` and `Lesson` (models already merged in PR #32; Sprint 2 adds CRUD and ordering screens).
 - **Risks:** object-level permission bugs (instructor editing another instructor's course), ordering/reordering edge cases, media upload configuration, scope creep into enrolment.
 - **Exit criteria:** an instructor can build a complete draft course and publish it; a second instructor gets 404 on the first instructor's studio URLs.
 
