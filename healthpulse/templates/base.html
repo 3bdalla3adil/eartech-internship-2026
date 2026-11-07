@@ -8,6 +8,10 @@
 <body>
     <nav class="navbar navbar-dark" style="background: #0f6c6c; padding: 1rem;">
         <a class="navbar-brand" href="/" style="color: white; text-decoration: none; font-size: 1.25rem;">HealthPulse</a>
+        <form method="post" action="{% url 'logout' %}" style="display: inline; float: right;">
+        {% csrf_token %}
+        <button type="submit">Logout</button>
+        </form>
     </nav>
     <main class="container" style="padding: 2rem;">
         {% block content %}

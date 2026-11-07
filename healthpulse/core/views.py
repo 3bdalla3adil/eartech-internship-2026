@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from .forms import RoleRegistrationForm
-from .models import PatientProfile, DoctorProfile
+from .models import PatientProfile, DoctorProfile 
+from django.contrib.auth.views import LoginView, LogoutView
 
 
 def register_view(request):
