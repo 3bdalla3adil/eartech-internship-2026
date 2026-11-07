@@ -6,7 +6,7 @@ from .models import Course
 def course_list(request):
     return HttpResponse('Courses app is working ✅')
 
-
+# Create your views here.
 def home(request):
     courses = (
         Course.objects.filter(is_published=True)
