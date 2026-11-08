@@ -94,3 +94,151 @@ class ThumbnailSizeValidationTests(TestCase):
             content_type="image/jpeg",
         )
         self.assertIs(validate_thumbnail_size(image), image)
+
+
+from courses.models import Course, Module, Lesson
+
+User = get_user_model()
+
+
+class ModuleLessonModelTests(TestCase):
+
+    def setUp(self):
+        self.instructor = User.objects.create_user(
+            username="instructor",
+            password="password123"
+        )
+
+        self.course = Course.objects.create(
+            title="Python Course",
+            instructor=self.instructor
+        )
+
+    def test_create_module_for_course(self):
+        module = Module.objects.create(
+            course=self.course,
+            title="Introduction",
+            order=1
+        )
+
+        self.assertEqual(module.course, self.course)
+
+    def test_module_ordering(self):
+        Module.objects.create(
+            course=self.course,
+            title="Module 2",
+            order=2
+        )
+
+        Module.objects.create(
+            course=self.course,
+            title="Module 1",
+            order=1
+        )
+
+        modules = list(Module.objects.all())
+
+        self.assertEqual(modules[0].title, "Module 1")
+        self.assertEqual(modules[1].title, "Module 2")
+
+    def test_create_lesson_for_module(self):
+        module = Module.objects.create(
+            course=self.course,
+            title="Introduction",
+            order=1
+        )
+
+        lesson = Lesson.objects.create(
+            module=module,
+            title="Lesson 1",
+            notes="Lesson notes",
+            video_url="https://youtube.com/watch?v=test",
+            order=1
+        )
+
+        self.assertEqual(lesson.module, module)
+
+    def test_lesson_ordering(self):
+        module = Module.objects.create(
+            course=self.course,
+            title="Introduction",
+            order=1
+        )
+
+        Lesson.objects.create(
+            module=module,
+            title="Lesson 2",
+            order=2
+        )
+
+        Lesson.objects.create(
+            module=module,
+            title="Lesson 1",
+            order=1
+        )
+
+        lessons = list(module.lessons.all())
+
+        self.assertEqual(lessons[0].title, "Lesson 1")
+        self.assertEqual(lessons[1].title, "Lesson 2")
+
+    def test_lesson_optional_notes(self):
+        module = Module.objects.create(
+            course=self.course,
+            title="Introduction",
+            order=1
+        )
+
+        lesson = Lesson.objects.create(
+            module=module,
+            title="Lesson 1",
+            order=1
+        )
+
+        self.assertEqual(lesson.notes, "")
+
+    def test_lesson_optional_video_url(self):
+        module = Module.objects.create(
+            course=self.course,
+            title="Introduction",
+            order=1
+        )
+
+        lesson = Lesson.objects.create(
+            module=module,
+            title="Lesson 1",
+            order=1
+        )
+
+        self.assertIsNone(lesson.video_url)
+
+    def test_valid_video_url(self):
+        module = Module.objects.create(
+            course=self.course,
+            title="Introduction",
+            order=1
+        )
+
+        lesson = Lesson(
+            module=module,
+            title="Lesson 1",
+            video_url="https://youtube.com/watch?v=test"
+        )
+
+        lesson.full_clean()
+
+    def test_invalid_video_url(self):
+        module = Module.objects.create(
+            course=self.course,
+            title="Introduction",
+            order=1
+        )
+
+        lesson = Lesson(
+            module=module,
+            title="Lesson 1",
+            video_url="invalid-url"
+        )
+
+        with self.assertRaises(ValidationError):
+            lesson.full_clean()
