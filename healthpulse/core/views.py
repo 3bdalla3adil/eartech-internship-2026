@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from .forms import RoleRegistrationForm
 from .models import PatientProfile, DoctorProfile
+from django.urls import reverse
 
 def register_view(request):
     if request.method == 'POST':
@@ -42,5 +43,7 @@ def patient_dashboard(request):
 class RoleLoginView(LoginView):
     template_name = 'login.html'
 
+    def get_success_url(self):
+        return reverse('home_redirect')
 class RoleLogoutView(LogoutView):
     next_page = 'login'
