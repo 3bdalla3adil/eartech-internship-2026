@@ -1,7 +1,15 @@
 from django.http import HttpResponse
 from django.shortcuts import render
-from .models import Course
 
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
+from django.views.generic import (
+    CreateView,
+    UpdateView,
+    DeleteView,
+)
+
+from .models import Course, Module, Lesson
 
 def course_list(request):
     return HttpResponse('Courses app is working ✅')
@@ -15,15 +23,7 @@ def home(request):
     )
     return render(request, "home.html", {"courses": courses})
 
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
-from django.views.generic import (
-    CreateView,
-    UpdateView,
-    DeleteView,
-)
 
-from .models import Course, Module, Lesson
 
 class ModuleCreateView(LoginRequiredMixin, CreateView):
     model = Module
@@ -44,23 +44,30 @@ class ModuleCreateView(LoginRequiredMixin, CreateView):
             kwargs={"pk": self.object.course.pk}
         )
 
-class ModuleCreateView(LoginRequiredMixin, CreateView):
-    model = Module
-    fields = ["title", "order"]
+class LessonCreateView(LoginRequiredMixin, CreateView):
+    model = Lesson
+    fields = [
+        "title",
+        "notes",
+        "video_url",
+        "order",
+    ]
 
     def form_valid(self, form):
-        course = Course.objects.get(pk=self.kwargs["course_id"])
+        module = Module.objects.get(
+            pk=self.kwargs["module_id"]
+        )
 
-        if course.instructor != self.request.user:
+        if module.course.instructor != self.request.user:
             return self.handle_no_permission()
 
-        form.instance.course = course
+        form.instance.module = module
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse_lazy(
             "course-detail",
-            kwargs={"pk": self.object.course.pk}
+            kwargs={"pk": self.object.module.course.pk}
         )
 
 class ModuleUpdateView(LoginRequiredMixin, UpdateView):
