@@ -1,19 +1,13 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Login - HealthPulse</title>
-</head>
+<head><title>Login</title></head>
 <body>
-
-    <h1>Login to HealthPulse</h1>
-
-    <form method="POST">
-        {% csrf_token %}
-
-        {{ form.as_p }}
-
-        <button type="submit">Login</button>
-    </form>
-
+  <h2>Login</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Login</button>
+  </form>
+  <p>No account? <a href="{% url 'register' %}">Register</a></p>
 </body>
 </html>
