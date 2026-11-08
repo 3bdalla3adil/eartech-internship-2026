@@ -274,7 +274,7 @@ class ModulePermissionTests(TestCase):
         )
 
         response = self.client.post(
-            reverse("module-update", args=[self.module.pk]),
+            reverse("courses:module_update", args=[self.module.pk]),
             {
                 "title": "Updated Module",
                 "order": 1,
@@ -292,7 +292,7 @@ class ModulePermissionTests(TestCase):
         )
 
         response = self.client.post(
-            reverse("module-update", args=[self.module.pk]),
+            reverse("courses:module_update", args=[self.module.pk]),
             {
                 "title": "Hacked Module",
                 "order": 1,
@@ -315,7 +315,7 @@ class ModulePermissionTests(TestCase):
         )
 
         self.client.post(
-            reverse("module-delete", args=[self.module.pk])
+            reverse("courses:module_delete", args=[self.module.pk])
         )
 
         self.assertFalse(
@@ -331,7 +331,7 @@ class ModulePermissionTests(TestCase):
         )
 
         response = self.client.post(
-            reverse("module-delete", args=[self.module.pk])
+            reverse("courses:module_delete", args=[self.module.pk])
         )
 
         self.assertTrue(

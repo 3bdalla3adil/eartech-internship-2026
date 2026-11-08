@@ -7,6 +7,7 @@ from django.views.generic import (
     CreateView,
     UpdateView,
     DeleteView,
+    DetailView
 )
 
 from .models import Course, Module, Lesson
@@ -23,6 +24,14 @@ def home(request):
     )
     return render(request, "home.html", {"courses": courses})
 
+class CourseDetailView(LoginRequiredMixin, DetailView):
+    model = Course
+    template_name = "courses/course_detail.html"  # Your template path
+    context_object_name = "courses"
+
+    def get_queryset(self):
+        # Restricts visibility: Instructors can only view their own courses
+        return Course.objects.filter(instructor=self.request.user)
 
 
 class ModuleCreateView(LoginRequiredMixin, CreateView):
@@ -40,7 +49,7 @@ class ModuleCreateView(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse_lazy(
-            "course-detail",
+            "courses:course_detail",
             kwargs={"pk": self.object.course.pk}
         )
 
@@ -66,7 +75,7 @@ class LessonCreateView(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse_lazy(
-            "course-detail",
+            "courses:course_detail",
             kwargs={"pk": self.object.module.course.pk}
         )
 
@@ -81,7 +90,7 @@ class ModuleUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse_lazy(
-            "course-detail",
+            "courses:course_detail",
             kwargs={"pk": self.object.course.pk}
         )
 
@@ -95,7 +104,7 @@ class ModuleDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy(
-            "course-detail",
+            "courses:course_detail",
             kwargs={"pk": self.object.course.pk}
         )
 
@@ -115,7 +124,7 @@ class LessonUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse_lazy(
-            "course-detail",
+            "courses:course_detail",
             kwargs={"pk": self.object.module.course.pk}
         )
 
@@ -129,7 +138,7 @@ class LessonDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy(
-            "course-detail",
+            "courses:course_detail",
             kwargs={"pk": self.object.module.course.pk}
         )
 
