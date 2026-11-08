@@ -242,3 +242,102 @@ class ModuleLessonModelTests(TestCase):
 
         with self.assertRaises(ValidationError):
             lesson.full_clean()
+
+class ModulePermissionTests(TestCase):
+
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="owner",
+            password="password123"
+        )
+
+        self.other_user = User.objects.create_user(
+            username="other",
+            password="password123"
+        )
+
+        self.course = Course.objects.create(
+            title="Python Course",
+            instructor=self.owner
+        )
+
+        self.module = Module.objects.create(
+            course=self.course,
+            title="Module 1",
+            order=1
+        )
+
+    def test_owner_can_update_module(self):
+        self.client.login(
+            username="owner",
+            password="password123"
+        )
+
+        response = self.client.post(
+            reverse("module-update", args=[self.module.pk]),
+            {
+                "title": "Updated Module",
+                "order": 1,
+            }
+        )
+
+        self.module.refresh_from_db()
+
+        self.assertEqual(self.module.title, "Updated Module")
+
+    def test_non_owner_cannot_update_module(self):
+        self.client.login(
+            username="other",
+            password="password123"
+        )
+
+        response = self.client.post(
+            reverse("module-update", args=[self.module.pk]),
+            {
+                "title": "Hacked Module",
+                "order": 1,
+            }
+        )
+
+        self.module.refresh_from_db()
+
+        self.assertNotEqual(
+            self.module.title,
+            "Hacked Module"
+        )
+
+        self.assertIn(response.status_code, [403, 404])
+
+    def test_owner_can_delete_module(self):
+        self.client.login(
+            username="owner",
+            password="password123"
+        )
+
+        self.client.post(
+            reverse("module-delete", args=[self.module.pk])
+        )
+
+        self.assertFalse(
+            Module.objects.filter(
+                pk=self.module.pk
+            ).exists()
+        )
+
+    def test_non_owner_cannot_delete_module(self):
+        self.client.login(
+            username="other",
+            password="password123"
+        )
+
+        response = self.client.post(
+            reverse("module-delete", args=[self.module.pk])
+        )
+
+        self.assertTrue(
+            Module.objects.filter(
+                pk=self.module.pk
+            ).exists()
+        )
+
+        self.assertIn(response.status_code, [403, 404])
