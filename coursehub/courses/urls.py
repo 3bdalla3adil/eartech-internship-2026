@@ -6,11 +6,19 @@ app_name = 'courses'
 
 urlpatterns = [
     path('', views.course_list, name='list'),
+
+    # Course Create and Edit
+    path('new/', views.CourseCreateView.as_view(), name='course_create'),
+    path('<int:pk>/edit/', views.CourseUpdateView.as_view(), name='course_update'),
+
+    # Curriculum
     path(
         '<int:course_id>/curriculum/',
         views.course_curriculum,
         name='curriculum',
     ),
+
+    # Module CRUD
     path(
         '<int:course_id>/modules/add/',
         views.module_create,
@@ -26,6 +34,8 @@ urlpatterns = [
         views.module_delete,
         name='module_delete',
     ),
+
+    # Lesson CRUD
     path(
         'modules/<int:module_id>/lessons/add/',
         views.lesson_create,
