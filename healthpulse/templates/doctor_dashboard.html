@@ -1,13 +1,29 @@
-<!DOCTYPE html>
-<html>
-<head><title>Doctor Dashboard</title></head>
-<body>
-  <h1>Welcome Dr. {{ request.user.username }}</h1>
-  
-<form method="post" action="{% url 'logout' %}">
-    {% csrf_token %}
-    <button type="submit">Logout</button>
-</form>
+{% extends 'base.html' %}
 
-</body>
-</html>
+{% block content %}
+
+    <h1>Welcome Dr. {{ request.user.username }}</h1>
+
+    <h2>Quick Links</h2>
+
+    <ul>
+        <li>
+            <a href="{% url 'doctor_dashboard' %}">
+                My Dashboard
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'patient_dashboard' %}">
+                Patient Dashboard
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'admin:index' %}">
+                Admin Panel
+            </a>
+        </li>
+    </ul>
+
+{% endblock %}

@@ -5,6 +5,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from .forms import RoleRegistrationForm
 from .models import PatientProfile, DoctorProfile
 from django.urls import reverse
+from django.http import HttpResponseForbidden
 
 def register_view(request):
     if request.method == 'POST':
@@ -34,11 +35,23 @@ def home_redirect(request):
 
 @login_required
 def doctor_dashboard(request):
+    if not hasattr(request.user, 'doctorprofile'):
+        if hasattr(request.user, 'patientprofile'):
+            return redirect('patient_dashboard')
+        return HttpResponseForbidden("Access Denied")
+
     return render(request, 'doctor_dashboard.html')
+
 
 @login_required
 def patient_dashboard(request):
+    if not hasattr(request.user, 'patientprofile'):
+        if hasattr(request.user, 'doctorprofile'):
+            return redirect('doctor_dashboard')
+        return HttpResponseForbidden("Access Denied")
+
     return render(request, 'patient_dashboard.html')
+
 
 class RoleLoginView(LoginView):
     template_name = 'login.html'
