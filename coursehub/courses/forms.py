@@ -17,7 +17,7 @@ def validate_thumbnail_size(image):
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
-        fields = ["title", "price", "thumbnail", "is_published"]
+        fields = ["title", "price", "thumbnail", "status"]
 
     def clean_thumbnail(self):
         return validate_thumbnail_size(

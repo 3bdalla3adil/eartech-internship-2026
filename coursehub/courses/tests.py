@@ -34,7 +34,7 @@ class HomeViewTests(TestCase):
     def test_card_shows_title_instructor_and_price(self):
         Course.objects.create(
             title="Python for Beginners", instructor=self.omar,
-            price=Decimal("49"), is_published=True,
+            price=Decimal("49"), status="PUBLISHED",
         )
         response = self.client.get(reverse("home"))
         self.assertContains(response, "Python for Beginners")
@@ -43,31 +43,31 @@ class HomeViewTests(TestCase):
 
     def test_instructor_without_full_name_shows_username(self):
         sami = get_user_model().objects.create_user(username="sami", password="pass")
-        Course.objects.create(title="Cyber 101", instructor=sami, is_published=True)
+        Course.objects.create(title="Cyber 101", instructor=sami, status="PUBLISHED")
         response = self.client.get(reverse("home"))
         self.assertContains(response, "by sami")
 
     def test_zero_price_shows_free(self):
         Course.objects.create(
             title="Cyber 101", instructor=self.omar,
-            price=Decimal("0"), is_published=True,
+            price=Decimal("0"), status="PUBLISHED",
         )
         response = self.client.get(reverse("home"))
         self.assertContains(response, "Free")
 
     def test_draft_courses_hidden(self):
-        Course.objects.create(title="Draft Course", instructor=self.omar, is_published=False)
+        Course.objects.create(title="Draft Course", instructor=self.omar, status="DRAFT")
         response = self.client.get(reverse("home"))
         self.assertNotContains(response, "Draft Course")
 
     def test_placeholder_when_no_thumbnail(self):
-        Course.objects.create(title="No Image", instructor=self.omar, is_published=True)
+        Course.objects.create(title="No Image", instructor=self.omar, status="PUBLISHED")
         response = self.client.get(reverse("home"))
         self.assertContains(response, "placehold.co")
 
     def test_limits_to_eight_courses(self):
         for i in range(10):
-            Course.objects.create(title=f"Course {i}", instructor=self.omar, is_published=True)
+            Course.objects.create(title=f"Course {i}", instructor=self.omar, status="PUBLISHED")
         response = self.client.get(reverse("home"))
         self.assertEqual(len(response.context["courses"]), 8)
 

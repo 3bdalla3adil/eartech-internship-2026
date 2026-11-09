@@ -45,7 +45,15 @@ class Course(models.Model):
         blank=True,
     )
 
-    is_published = models.BooleanField(default=False)
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Draft"
+        PUBLISHED = "PUBLISHED", "Published"
+
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.DRAFT,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
