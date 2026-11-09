@@ -94,3 +94,30 @@ class ThumbnailSizeValidationTests(TestCase):
             content_type="image/jpeg",
         )
         self.assertIs(validate_thumbnail_size(image), image)
+        
+
+class TogglePublishTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.teacher = User.objects.create_user(
+            username="teach", password="pass", role="INSTRUCTOR"
+        )
+        self.course = Course.objects.create(title="Django Web", instructor=self.teacher)
+        self.url = reverse("courses:toggle_publish", args=[self.course.pk])
+
+    def test_publish_then_unpublish(self):
+        self.client.login(username="teach", password="pass")
+        self.client.post(self.url)
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.status, "PUBLISHED")
+        self.client.post(self.url)
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.status, "DRAFT")
+
+    def test_other_instructor_cannot_toggle(self):
+        get_user_model().objects.create_user(
+            username="other", password="pass", role="INSTRUCTOR"
+        )
+        self.client.login(username="other", password="pass")
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 404)
