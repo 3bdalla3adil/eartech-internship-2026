@@ -6,29 +6,22 @@ from django.views.generic.edit import CreateView, UpdateView
 
 from accounts.decorators import InstructorRequiredMixin, instructor_required
 
+from .forms import CourseForm
 from .models import Course
-
-COURSE_FORM_FIELDS = [
-    "title",
-    "subtitle",
-    "category",
-    "price",
-    "description",
-    "thumbnail",
-]
 
 
 class CourseFormMixin:
     """Shared configuration for the course create and update views."""
 
-    model = Course
-    fields = COURSE_FORM_FIELDS
+    form_class = CourseForm
     template_name = "courses/course_form.html"
     success_url = reverse_lazy("studio")
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         for field in form.fields.values():
+            if isinstance(field.widget, forms.CheckboxInput):
+                continue
             css_class = (
                 "form-select"
                 if isinstance(field.widget, forms.Select)

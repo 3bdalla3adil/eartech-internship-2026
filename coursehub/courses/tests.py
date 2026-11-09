@@ -1,15 +1,24 @@
-from django.test import TestCase
-from django.urls import reverse
+
+import io
+import os
 from decimal import Decimal
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from PIL import Image
+
+from .forms import MAX_THUMBNAIL_SIZE, validate_thumbnail_size
 from .models import Category, Course
+
 
 class CourseListViewTests(TestCase):
     def test_course_list_page_loads(self):
         response = self.client.get(reverse('courses:list'))
         self.assertEqual(response.status_code, 200)
+
 
 class HomeViewTests(TestCase):
     def setUp(self):
@@ -168,6 +177,30 @@ class CourseCreateUpdateTests(TestCase):
             Course.objects.filter(title="Django for Beginners").exists()
         )
 
+    def test_create_rejects_thumbnail_larger_than_2_mb(self):
+        self.login("lina")
+
+        image = Image.frombytes(
+            "RGB", (1500, 1500), os.urandom(1500 * 1500 * 3)
+        )
+        buffer = io.BytesIO()
+        image.save(buffer, format="JPEG", quality=95)
+        large_image = SimpleUploadedFile(
+            "large.jpg", buffer.getvalue(), content_type="image/jpeg"
+        )
+        self.assertGreater(large_image.size, MAX_THUMBNAIL_SIZE)
+
+        response = self.client.post(
+            reverse("courses:course_create"),
+            self.payload(thumbnail=large_image),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Image must be under 2 MB.")
+        self.assertFalse(
+            Course.objects.filter(title="Django for Beginners").exists()
+        )
+
     def test_create_requires_instructor_role(self):
         self.login("student")
         response = self.client.get(reverse("courses:course_create"))
@@ -270,3 +303,23 @@ class CourseCreateUpdateTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login/", response.url)
+
+
+class ThumbnailSizeValidationTests(TestCase):
+    def test_rejects_image_larger_than_2_mb(self):
+        image = SimpleUploadedFile(
+            "large.jpg",
+            b"x" * (2 * 1024 * 1024 + 1),
+            content_type="image/jpeg",
+        )
+
+        with self.assertRaises(ValidationError):
+            validate_thumbnail_size(image)
+
+    def test_accepts_image_smaller_than_2_mb(self):
+        image = SimpleUploadedFile(
+            "small.jpg",
+            b"x" * 1024,
+            content_type="image/jpeg",
+        )
+        self.assertIs(validate_thumbnail_size(image), image)
