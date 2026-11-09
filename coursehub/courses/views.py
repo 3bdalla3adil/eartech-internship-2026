@@ -14,3 +14,7 @@ def home(request):
         .order_by("-created_at")[:8]
     )
     return render(request, "home.html", {"courses": courses})
+
+
+def about(request):
+    return render(request, "about.html")
