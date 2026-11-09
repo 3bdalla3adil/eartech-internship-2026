@@ -104,6 +104,9 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Custom user model with role (patient / doctor / admin)
+AUTH_USER_MODEL = 'core.User'
+
 # Email
 MAILERS = {
     'default': {

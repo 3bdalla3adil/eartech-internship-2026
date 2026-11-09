@@ -1,14 +1,14 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import get_user_model
 
-User = get_user_model()
+from .models import User
 
 
 class RoleRegistrationForm(UserCreationForm):
+    # Only patients and doctors can self-register; admins are created via createsuperuser.
     ROLE_CHOICES = (
-        ('patient', 'Patient'),
-        ('doctor', 'Doctor'),
+        (User.Role.PATIENT, 'Patient'),
+        (User.Role.DOCTOR, 'Doctor'),
     )
 
     first_name = forms.CharField(

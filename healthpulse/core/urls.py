@@ -5,6 +5,9 @@ from . import views
 urlpatterns = [
     path('admin/', admin.site.urls),
 
+    # Root: login page or the user's own dashboard
+    path('', views.home_redirect, name='home'),
+
     # Registration
     path('register/', views.register_view, name='register'),
 
