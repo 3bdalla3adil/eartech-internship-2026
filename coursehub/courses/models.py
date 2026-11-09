@@ -46,7 +46,6 @@ class Course(models.Model):
 
     is_published = models.BooleanField(default=False)
 
-    
     students = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         through='enrollments.Enrollment',

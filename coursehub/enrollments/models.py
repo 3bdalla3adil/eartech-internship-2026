@@ -12,7 +12,7 @@ class Enrollment(models.Model):
         on_delete=models.CASCADE, 
         related_name='enrollments'
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    enrolled_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('student', 'course')  # Prevent duplicate enrollments
