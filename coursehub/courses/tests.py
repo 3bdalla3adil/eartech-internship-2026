@@ -1,4 +1,3 @@
-
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -94,3 +93,18 @@ class ThumbnailSizeValidationTests(TestCase):
             content_type="image/jpeg",
         )
         self.assertIs(validate_thumbnail_size(image), image)
+
+# -- التعديل الجديد: اختبارات صفحة About --
+class AboutPageTests(TestCase):
+    def test_about_page_status_code_and_template(self):
+        url = reverse('about')
+        response = self.client.get(url)
+        
+        # 1. التحقق من أن حالة الاستجابة هي 200 (ناجحة)
+        self.assertEqual(response.status_code, 200)
+        
+        # 2. التحقق من أن القالب المستخدم هو about.html
+        self.assertTemplateUsed(response, 'about.html')
+        
+        # 3. التحقق من وجود رابط About في الـ navbar
+        self.assertContains(response, 'href="/about/"')

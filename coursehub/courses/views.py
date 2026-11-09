@@ -2,7 +2,6 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from .models import Course
 
-
 def course_list(request):
     return HttpResponse('Courses app is working ✅')
 
@@ -14,3 +13,6 @@ def home(request):
         .order_by("-created_at")[:8]
     )
     return render(request, "home.html", {"courses": courses})
+
+def about(request):
+    return render(request, "about.html")
