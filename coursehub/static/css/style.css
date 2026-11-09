@@ -236,6 +236,21 @@ body {
     box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
 }
 
+.auth-field select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 2.75rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+    background-size: 16px 16px;
+}
+
+.auth-field select::-ms-expand {
+    display: none;
+}
+
 .auth-field.has-error input,
 .auth-field.has-error select {
     border-color: #dc2626;
