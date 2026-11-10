@@ -6,12 +6,12 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from PIL import Image
 
 from .forms import MAX_THUMBNAIL_SIZE, validate_thumbnail_size
-from .models import Category, Course
+from .models import Category, Course, Lesson, embed_url
 
 
 class CourseListViewTests(TestCase):
@@ -323,3 +323,43 @@ class ThumbnailSizeValidationTests(TestCase):
             content_type="image/jpeg",
         )
         self.assertIs(validate_thumbnail_size(image), image)
+
+
+
+class VideoEmbedTests(SimpleTestCase):
+    def test_youtube_watch_url(self):
+        self.assertEqual(
+            embed_url("https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+            "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        )
+
+    def test_youtube_short_url(self):
+        self.assertEqual(
+            embed_url("https://youtu.be/dQw4w9WgXcQ"),
+            "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        )
+
+    def test_vimeo_url(self):
+        self.assertEqual(
+            embed_url("https://vimeo.com/123456789"),
+            "https://player.vimeo.com/video/123456789",
+        )
+
+    def test_invalid_or_empty_url_returns_none(self):
+        for url in (
+            "",
+            None,
+            "not a URL",
+            "https://example.com/video",
+            "https://youtube.com.example.com/watch?v=dQw4w9WgXcQ",
+            "https://www.youtube.com/watch?v=short",
+        ):
+            with self.subTest(url=url):
+                self.assertIsNone(embed_url(url))
+
+    def test_lesson_embed_property(self):
+        lesson = Lesson(video_url="https://youtu.be/dQw4w9WgXcQ")
+        self.assertEqual(
+            lesson.embed,
+            "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        )

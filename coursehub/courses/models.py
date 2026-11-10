@@ -1,5 +1,56 @@
+import re
+from urllib.parse import parse_qs, urlparse
+
 from django.conf import settings
 from django.db import models
+
+
+YOUTUBE_VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+def embed_url(url):
+    """Return a safe YouTube/Vimeo embed URL, or None for unsupported URLs."""
+    if not isinstance(url, str) or not url.strip():
+        return None
+
+    try:
+        parsed = urlparse(url.strip())
+        host = (parsed.hostname or "").lower()
+    except ValueError:
+        return None
+
+    if parsed.scheme not in {"http", "https"} or parsed.username or parsed.password:
+        return None
+
+    video_id = None
+
+    if host in {"youtube.com", "www.youtube.com", "m.youtube.com"}:
+        if parsed.path == "/watch":
+            video_id = parse_qs(parsed.query).get("v", [None])[0]
+        elif parsed.path.startswith("/embed/"):
+            parts = parsed.path.strip("/").split("/")
+            if len(parts) == 2:
+                video_id = parts[1]
+
+        if video_id and YOUTUBE_VIDEO_ID.fullmatch(video_id):
+            return f"https://www.youtube.com/embed/{video_id}"
+
+    elif host == "youtu.be":
+        video_id = parsed.path.strip("/").split("/")[0]
+        if YOUTUBE_VIDEO_ID.fullmatch(video_id):
+            return f"https://www.youtube.com/embed/{video_id}"
+
+    elif host in {"vimeo.com", "www.vimeo.com", "player.vimeo.com"}:
+        parts = parsed.path.strip("/").split("/")
+        if host == "player.vimeo.com" and len(parts) == 2 and parts[0] == "video":
+            video_id = parts[1]
+        elif parts:
+            video_id = parts[0]
+
+        if video_id and video_id.isdigit():
+            return f"https://player.vimeo.com/video/{video_id}"
+
+    return None
 
 
 class Category(models.Model):
@@ -71,6 +122,11 @@ class Module(models.Model):
 
 
 class Lesson(models.Model):
+    @property
+    def embed(self):
+        return embed_url(self.video_url)
+
+
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='lessons')
     title = models.CharField(max_length=255)
     notes = models.TextField(blank=True)
